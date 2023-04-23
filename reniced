@@ -1,0 +1,224 @@
+#!/usr/bin/env perl
+# Renice some processes, to make system more respositive
+
+# TODO: Add -c parameter to pointout where config actually is
+# TODO: Add perlcritic rules :)
+# TODO: Запользовать модуль Proc::Find для получения списка pid-ов искомых процессов и их текущих парметров.
+use strict;
+use warnings;
+use utf8;
+use open     qw (:std :utf8);
+use Encode   qw (encode);
+use English  qw (-no_match_vars);
+use JSON::XS    ();
+use POSIX    qw (setsid);
+
+local $SIG{INT}  = \&__signal_handler;
+local $SIG{TERM} = \&__signal_handler;
+
+my $list;
+my $F;
+
+my $uid = $<;
+
+my $config = LoadConf();
+my $pidfile = '/run/reniced.pid'; # Пусть будет глобальной переменной, чтобы обратиться к ней в хэндлерах сигналов
+
+if ($uid > 0) {
+	$pidfile = sprintf '/tmp/reniced-%s.pid', $uid;
+}
+
+if ((defined $config->{patameters}->{pidfile}) && ($config->{patameters}->{pidfile} ne '')) {
+	$pidfile = $config->{patameters}->{pidfile};
+}
+
+unless ($config->{foreground}) {
+	daemonize ();
+	my $pidfilehandler;
+
+	# Поскольку мы логи никуда не пишем, то обработать ошибку, если она возникнет, вербозно не можем.
+	if (open ($pidfilehandler, '>', $pidfile)) {
+		if (print {$pidfilehandler} $PID) {
+			close $pidfilehandler;
+		}
+	}
+}
+
+while (sleep 2) {
+	open $F, qq{ps xau |} or do { warn "Can't 'run ps xau': $!" ; next; };
+	binmode $F, ':utf8';
+
+	my $cmd;
+
+	while (my $str = readline $F) {
+		chomp $str;
+		my ($user, $pid, $cpu, $mem, $vsz, $rss, $tt, $stat, $started, $time, $command) = split /\s+/, $str, 11;
+		if ($uid > 0) { # i'm not root!
+			my $u = getpwuid ($<);
+
+			if (defined $pid && defined $command && defined $user) {
+				if (($u eq $user) && ($pid =~ /^\d+$/))  {
+					push @{$cmd->{$command}}, $pid;
+				}
+			}
+		} else { # fuck, yeah! i'm root!
+			# since we interested in changing niceness of processes, we need to make map command->[pids]
+			if (defined $pid && defined $command) {
+				if ($pid =~ /^\d+$/) {
+					push @{$cmd->{$command}}, $pid;
+				}
+			}
+		}
+	}
+
+	close $F;
+
+	if (defined $cmd) {
+		# bulk chanage niceness :)
+		my $prio = $config->{prio};
+		my $kill = $config->{kill};
+
+		foreach my $kill_signal (keys %{$kill}) {
+			my @pids;
+
+			foreach my $command (keys %{$cmd}) {
+				foreach my $command_pattern (@{$kill->{$kill_signal}}) {
+					if ($command =~ /$command_pattern/) {
+						push @pids, @{$cmd->{$command}};
+					}
+				}
+			}
+
+			if ($#pids >= 0) {
+				my $killcmd = sprintf 'kill -%s %s', $kill_signal, join (' ', @pids);
+				`$killcmd`;
+			}
+		}
+
+		foreach my $priority (keys %{$prio}) {
+			my @pids;
+
+			foreach my $command (keys %{$cmd}) {
+				foreach my $command_pattern (@{$prio->{$priority}}) {
+					if ($command =~ /$command_pattern/u) {
+						push @pids, @{$cmd->{$command}};
+					}
+				}
+			}
+
+			if ($#pids >= 0) {
+				my $renice;
+
+				if (($uid > 0) && ($priority < 0)) {
+					$renice = sprintf "renice 0 -p %s", join (' ', @pids);
+				} else {
+					$renice = sprintf "renice %s -p %s", $priority, join (' ', @pids);
+				}
+
+				`$renice`;
+
+				if ($priority > 2) {
+					if ($OSNAME eq 'darwin') {
+						my $taskpol = sprintf 'taskpolicy -b -p %s', join (' '. @pids);
+						`$taskpol`;
+					} elsif ($OSNAME eq 'linux') {
+						foreach my $pid (@pids) {
+							`ionice -c 3 -p $pid`;
+						}
+					}
+				}
+			}
+
+			$#pids = -1; undef @pids;
+			sleep 1;
+		}
+
+		undef $prio;
+		undef $cmd;
+	}
+}
+
+# This code unreachable, but for formal correctness it should be here :)
+if (-f $pidfile) {
+	unlink $pidfile;
+}
+
+exit 0;
+
+sub LoadConf {
+	my $file = '/etc/reniced.json';
+	my $uid = $<;
+
+	# On recent MacOS we have no direct ability to run reniced as system service, so we have to run it as user, probably
+	# via sudo, so we have to check OS here and use $HOME/.reniced.json for MacOS.
+	if (($OSNAME eq 'darwin') || ($uid != 0)) {
+		# Assume that script is not running under completely sanitized environment
+		die "No HOME variable found.\n" unless (defined $ENV{HOME});
+
+		$file = sprintf '%s/.reniced.json', $ENV{HOME};
+	}
+
+	open my $FILEHANDLE, '<', $file || die "[FATA] No conf at $file: $OS_ERROR\n";
+
+	# Use binmode in order to get amount of read bytes (not chars!) from read()
+	binmode $FILEHANDLE;
+	my $len = (stat $file) [7];
+	my $json;
+	my $readlen = read $FILEHANDLE, $json, $len;
+	$json = encode 'UTF-8', $json;
+
+	unless (defined $readlen) {
+		close $FILEHANDLE;
+		die "Unable to read $file: $OS_ERROR\n";
+	}
+
+	if ($readlen != $len) {
+		close $FILEHANDLE;
+		die "File $file is $len bytes on disk, but we read only $readlen bytes\n";
+	}
+
+	close $FILEHANDLE;
+
+	my $j = JSON::XS->new->utf8->relaxed;
+	my $config = eval { $j->decode ($json); };
+
+	unless (defined $config) {
+		die "File $file does not contain a valid json data: $EVAL_ERROR\n";
+	}
+
+	return $config;
+}
+
+sub daemonize {
+	__fork ();
+	setsid ();
+	open STDIN,  '<', '/dev/null';
+	open STDOUT, '>', '/dev/null';
+	open STDERR, '>', '/dev/null';
+	__fork ();
+	umask 0;
+	return;
+}
+
+sub __fork {
+	my $pid = fork;
+
+	unless (defined $pid) {
+		die ("Can't fork: $!");
+	}
+
+	if ($pid != 0) {
+		exit;
+	}
+
+	return;
+}
+
+sub __signal_handler {
+	# remove pidfile if it exist
+	if (-f $pidfile) {
+		unlink $pidfile;
+	}
+
+	exit 0;
+}

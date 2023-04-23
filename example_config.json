@@ -1,0 +1,137 @@
+{
+	"parameters": {
+		# 0   - запустить как обычный прооцесс (для systemd, например)
+		# > 0 - запустить как unix daemon
+		"foreground" : 0
+	},
+
+	"kill" : {
+		"STOP": [
+			# Это такая бэкапилка для MacOS, но на удалёнке она больше жрёт проц и греет макбук, чем что-то там реально
+			# бэкапит.
+			"commvault"
+		]
+	},
+
+	# Это на самом деле nice level, safe values 0-19, для обычного пользователя и -19-19 для суперпользователя (uid=0)
+	# Значения в "списке процессов" задаются регулярными выражениями
+	"prio" : {
+		# High prio: Audio, Streaming, Video, Windows management
+		"-11": [
+			"coreaudiod",
+			"WindowServer",
+			"com.apple.audio.SandboxHelper",
+			"com.apple.audio.DriverHelper",
+			"audioclocksyncd",
+			"SystemUIServer"
+		],
+
+		# Medium prio
+		"-5": [
+			"VTDecoderXPCService ",
+			"VTEncoderXPCService",
+			"VK Teams ",
+			"mDNSResponder$",
+			"mDNSResponderHelper$",
+			"AudioComponentRegistrar",
+			"CVMServer"
+		],
+
+		# Above normal - keyboard event remapper and trapper
+		"-3": [
+			"Karabiner\\-Elements",
+			"Hammerspoon",
+			"MTLCompilerService",
+			"com.apple.appkit.xpc.openAndSavePanelService"
+		],
+
+		# Background processes, loggers, misc less valuable services
+		"3": [
+			"\\/logd$",
+			"\\/syslogd",
+			"syspolicyd",
+			"\\/cron$",
+			"softwareupdated",
+			"periodic\\-wrapper",
+			"iconservicesagent",
+			"com.apple.quicklook.ThumbnailsAgent",
+			"appstored"
+		],
+
+		# IO active and system services
+		"5": [
+			"corebrightnessd",
+			"airportd",
+			"containermanagerd",
+			"searchpartyd",
+			"\\/usr\\/bin\\/log",
+			"corespeechd",
+			"peopled",
+			"AssetCacheLocatorService",
+			"avatarsd",
+			"contactsdonationagent",
+			"storedownloadd",
+			"Dock\\.app",
+			"Dock$",
+			"Finder$",
+			"DockHelper$"
+		],
+
+		# Browsers and such
+		"9": [
+			"\\/Google Chrome",
+			"\\/Google Chrome Helper",
+			"EmojiFunction",
+			"Microsoft Edge Helper",
+			"Opera Helper",
+			"UserNotificationCenter"
+		],
+
+		# Even more less important services
+		"11": [
+			"siriactionsd",
+			"CoreSpotlightService",
+			"spotlightknowledged",
+			"Spotlight",
+			"suggestd",
+			"studentd",
+			"com.apple.siri-distributed\\-evaluation",
+			"com.apple.CloudPhotosConfiguration"
+		],
+		"12": ["bash"],
+		# IO hogs and other "bad" services
+		"19":[
+			"coreduetd",
+			"endpointsecurityd",
+			"analyticsd",
+			"backupd",
+			"com.apple.CodeSigningHelper",
+			"distnoted",
+			"backupd\\-helper", 
+			"JamfDaemon",
+			"osqueryd",
+			"commvault",
+			"diagnosticd",
+			"JamfProCommService",
+			"XprotectService",
+			"XProtectPluginService",
+			"media\\-indexer",
+			"com.apple.Safari.SafeBrowsing.Service",
+			"SafariNotificationAgent",
+			"AMPArtworkAgent",
+			"AMPLibraryAgent",
+			"IDSBlastDoorService",
+			"photoanalysisd",
+			"photolibraryd",
+			"Crash Reports",
+			"\\/mds$",
+			"\\/mds_stores$",
+			"\\/mdsync",
+			"mdbulkimport",
+			"mdworker_shared",
+			"osqueryd",
+			"opendirectoryd",
+			"mediaanalysisd"
+		]
+	}
+}
