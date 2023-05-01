@@ -2,7 +2,17 @@
 	"parameters": {
 		# 0   - запустить как обычный прооцесс (для systemd, например)
 		# > 0 - запустить как unix daemon
-		"foreground" : 0
+		"foreground" : 1,
+
+		# куда складываем process id нашего демоночка, пустая строка - не складываем никуда (pid-файл не нужен)
+		"pidfile": "/run/reniced.pid",
+
+		# Задержка между итерациями скрипта. По-умолчанию, 2 секунды. Измеряется в секундах.
+		# Не может быть менее 2-х секунд.
+		"loopdelay": "10",
+
+		# задержка между применением команд по renice-у. Измеряется в миллисекундах, по-умолчанию 0
+		"cmddelay": "1000"
 	},
 
 	"kill" : {
@@ -98,7 +108,7 @@
 			"com.apple.siri-distributed\\-evaluation",
 			"com.apple.CloudPhotosConfiguration"
 		],
-		"12": ["bash"],
+
 		# IO hogs and other "bad" services
 		"19":[
 			"coreduetd",
@@ -107,7 +117,7 @@
 			"backupd",
 			"com.apple.CodeSigningHelper",
 			"distnoted",
-			"backupd\\-helper", 
+			"backupd\\-helper",
 			"JamfDaemon",
 			"osqueryd",
 			"commvault",

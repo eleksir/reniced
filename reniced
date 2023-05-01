@@ -1,38 +1,57 @@
 #!/usr/bin/env perl
 # Renice some processes, to make system more respositive
 
-# TODO: Add -c parameter to pointout where config actually is
 # TODO: Add perlcritic rules :)
-# TODO: Запользовать модуль Proc::Find для получения списка pid-ов искомых процессов и их текущих парметров.
 use strict;
 use warnings;
 use utf8;
-use open     qw (:std :utf8);
-use Encode   qw (encode);
-use English  qw (-no_match_vars);
-use JSON::XS    ();
-use POSIX    qw (setsid);
+use open         qw (:std :utf8);
+use Encode       qw (encode);
+use English      qw (-no_match_vars);
+
+use Getopt::Long qw (GetOptions);
+use JSON::XS        ();
+use POSIX        qw (setsid :sys_resource_h);
+use Proc::Find   qw (find_proc);
+use Time::HiRes  qw (usleep);
 
 local $SIG{INT}  = \&__signal_handler;
 local $SIG{TERM} = \&__signal_handler;
 
-my $list;
-my $F;
-
 my $uid = $<;
 
+# We need it empty on first iteration
+my %ionice_pids     = ();
+my %ionice_pids_new = ();
+
+my ($pidfile, $configfile, $help, $loopdelay);
+
+GetOptions (
+	'pidfile=s'   => \$pidfile,    # Пусть будет глобальной переменной, чтобы обратиться к ней в хэндлерах сигналов
+	'config=s'    => \$configfile,
+	'help'        => \$help,
+);
+
+if (defined $help) {
+	help ();
+	exit 0;
+}
+
 my $config = LoadConf();
-my $pidfile = '/run/reniced.pid'; # Пусть будет глобальной переменной, чтобы обратиться к ней в хэндлерах сигналов
 
-if ($uid > 0) {
-	$pidfile = sprintf '/tmp/reniced-%s.pid', $uid;
+unless (defined $pidfile) {
+	$pidfile = '/run/reniced.pid';
+
+	if ($uid > 0) {
+		$pidfile = sprintf '/tmp/reniced-%s.pid', $uid;
+	}
+
+	if ((defined $config->{pidfile})) {
+		$pidfile = $config->{parameters}->{pidfile};
+	}
 }
 
-if ((defined $config->{patameters}->{pidfile}) && ($config->{patameters}->{pidfile} ne '')) {
-	$pidfile = $config->{patameters}->{pidfile};
-}
-
-unless ($config->{foreground}) {
+if (! $config->{parameters}->{foreground}) {
 	daemonize ();
 	my $pidfilehandler;
 
@@ -44,36 +63,20 @@ unless ($config->{foreground}) {
 	}
 }
 
-while (sleep 2) {
-	open $F, qq{ps xau |} or do { warn "Can't 'run ps xau': $!" ; next; };
-	binmode $F, ':utf8';
+if ((defined $config->{parameters}->{loopdelay})  &&  ($config->{parameters}->{loopdelay} > 2)) {
+	$loopdelay = $config->{parameters}->{loopdelay};
+} else {
+	$loopdelay = 2;
+}
 
-	my $cmd;
+while (sleep $loopdelay) {
+	# Конечно, хотелось бы не искать по регулярке, ибо это относительно затратно, а просто собрать список... но что поделать
+	my $cmd = find_proc (
+		name   => qr /./,
+		detail => 1,
+	);
 
-	while (my $str = readline $F) {
-		chomp $str;
-		my ($user, $pid, $cpu, $mem, $vsz, $rss, $tt, $stat, $started, $time, $command) = split /\s+/, $str, 11;
-		if ($uid > 0) { # i'm not root!
-			my $u = getpwuid ($<);
-
-			if (defined $pid && defined $command && defined $user) {
-				if (($u eq $user) && ($pid =~ /^\d+$/))  {
-					push @{$cmd->{$command}}, $pid;
-				}
-			}
-		} else { # fuck, yeah! i'm root!
-			# since we interested in changing niceness of processes, we need to make map command->[pids]
-			if (defined $pid && defined $command) {
-				if ($pid =~ /^\d+$/) {
-					push @{$cmd->{$command}}, $pid;
-				}
-			}
-		}
-	}
-
-	close $F;
-
-	if (defined $cmd) {
+	if ((defined $cmd)  &&  ($#{$cmd} > 0)) {
 		# bulk chanage niceness :)
 		my $prio = $config->{prio};
 		my $kill = $config->{kill};
@@ -81,49 +84,93 @@ while (sleep 2) {
 		foreach my $kill_signal (keys %{$kill}) {
 			my @pids;
 
-			foreach my $command (keys %{$cmd}) {
+			foreach my $command (@{$cmd}) {
 				foreach my $command_pattern (@{$kill->{$kill_signal}}) {
-					if ($command =~ /$command_pattern/) {
-						push @pids, @{$cmd->{$command}};
+					if ($command->{cmdline}->[0] =~ /$command_pattern/) {
+						push @pids, $command->{pid};
 					}
 				}
 			}
 
 			if ($#pids >= 0) {
-				my $killcmd = sprintf 'kill -%s %s', $kill_signal, join (' ', @pids);
-				`$killcmd`;
+				# This op is a bit racy, so eval() it
+				eval { kill $kill_signal, join (' ', @pids) };
+
+				# Use our cmd_delay here, but convert it from milliseconds to microseconds: 1k ms = 1 sec, 1M us = 1 sec
+				# Not sure if we can handle properly delays < 10 ms, but noone really cares about such little delays.
+				if (defined $config->{parameters}->{cmddelay}) {
+					my $sleeptime = 1000 * $config->{parameters}->{cmddelay};
+					usleep ($sleeptime);
+				}
 			}
 		}
 
 		foreach my $priority (keys %{$prio}) {
 			my @pids;
 
-			foreach my $command (keys %{$cmd}) {
+			foreach my $command (@{$cmd}) {
 				foreach my $command_pattern (@{$prio->{$priority}}) {
-					if ($command =~ /$command_pattern/u) {
-						push @pids, @{$cmd->{$command}};
+
+					if ($command->{cmdline}->[0] =~ /$command_pattern/u) {
+						push @pids, $command->{pid};
 					}
 				}
 			}
 
 			if ($#pids >= 0) {
-				my $renice;
-
+				# If we're not superuser we cannot set prio to negative value, for sure, so skip it
 				if (($uid > 0) && ($priority < 0)) {
-					$renice = sprintf "renice 0 -p %s", join (' ', @pids);
+					# skip it
 				} else {
-					$renice = sprintf "renice %s -p %s", $priority, join (' ', @pids);
+					foreach (@pids) {
+						eval { setpriority PRIO_PROCESS, $_, $priority; };
+
+						if (defined $config->{parameters}->{cmddelay}) {
+							my $sleeptime = 1000 * $config->{parameters}->{cmddelay};
+							usleep ($sleeptime);
+						}
+					}
 				}
 
-				`$renice`;
+				# Менять политику io процессам можно только руту :)
+				if ($uid == 0) {
+					if ($priority > 2) {
+						if ($OSNAME eq 'darwin') {
+							my $setflag = 0;
+							my $taskpol = 'taskpolicy -b -p';
 
-				if ($priority > 2) {
-					if ($OSNAME eq 'darwin') {
-						my $taskpol = sprintf 'taskpolicy -b -p %s', join (' '. @pids);
-						`$taskpol`;
-					} elsif ($OSNAME eq 'linux') {
-						foreach my $pid (@pids) {
-							`ionice -c 3 -p $pid`;
+							foreach my $pid (@pids) {
+								if (defined ($ionice_pids{$pid})) {
+									$ionice_pids_new{$pid} = 1;
+								} else {
+									# set ionice for pid
+									$setflag = 1;
+									$ionice_pids_new{$pid} = 1;
+									$taskpol .= " $pid";
+								}
+							}
+
+							if ($setflag) {
+								`$taskpol`;
+							}
+						} elsif ($OSNAME eq 'linux') {
+							foreach my $pid (@pids) {
+								if (defined ($ionice_pids{$pid})) {
+									# do nothing
+									$ionice_pids_new{$pid} = 1;
+								} else {
+									# set ionice for pid
+									`ionice -c 3 -p $pid`;
+									$ionice_pids_new{$pid} = 1;
+								}
+
+								%ionice_pids = %ionice_pids_new;
+							}
+						}
+
+						if (defined $config->{parameters}->{cmddelay}) {
+							my $sleeptime = 1000 * $config->{parameters}->{cmddelay};
+							usleep ($sleeptime);
 						}
 					}
 				}
@@ -145,20 +192,41 @@ if (-f $pidfile) {
 
 exit 0;
 
+sub help {
+	my $msg = "Usage: reniced [--config /etc/reniced.json] [--pidfile /run/reniced.pid] [--help]\n";
+	$msg   .= "\n";
+	$msg   .= "       --config  overrides default value for config file, which is /etc/reniced.json for root and ~/.reniced.json for user\n";
+	$msg   .= "       --pidfile overrides default value for pid-file file, which is /run/reniced.pid for root and /tmp/reniced-uid.pid for user\n";
+	$msg   .= "       --help    displays this help\n\n";
+
+	if (defined $msg) {
+		print $msg;
+		exit 0;
+	} else {
+		warn $msg;
+		exit 1;
+	}
+}
+
 sub LoadConf {
 	my $file = '/etc/reniced.json';
-	my $uid = $<;
 
-	# On recent MacOS we have no direct ability to run reniced as system service, so we have to run it as user, probably
-	# via sudo, so we have to check OS here and use $HOME/.reniced.json for MacOS.
-	if (($OSNAME eq 'darwin') || ($uid != 0)) {
-		# Assume that script is not running under completely sanitized environment
-		die "No HOME variable found.\n" unless (defined $ENV{HOME});
+	if ((defined $configfile)  &&  ($configfile ne '')) {
+		$file = $configfile;
+	} else {
+		my $uid = $<;
 
-		$file = sprintf '%s/.reniced.json', $ENV{HOME};
+		# On recent MacOS we have no direct ability to run reniced as system service, so we have to run it as user, probably
+		# via sudo, so we have to check OS here and use $HOME/.reniced.json for MacOS.
+		if (($OSNAME eq 'darwin') || ($uid != 0)) {
+			# Assume that script is not running under completely sanitized environment
+			die "No HOME variable found.\n" unless (defined $ENV{HOME});
+
+			$file = sprintf '%s/.reniced.json', $ENV{HOME};
+		}
 	}
 
-	open my $FILEHANDLE, '<', $file || die "[FATA] No conf at $file: $OS_ERROR\n";
+	open my $FILEHANDLE, '<', $file || die "No config file at $file: $OS_ERROR\n";
 
 	# Use binmode in order to get amount of read bytes (not chars!) from read()
 	binmode $FILEHANDLE;
