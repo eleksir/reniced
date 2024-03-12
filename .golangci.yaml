@@ -1,0 +1,63 @@
+run:
+  tests: false
+  skip-dirs:
+    - vendor
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  go: '1.21'
+output:
+  sort-results: true
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - asasalint
+    - asciicheck
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - decorder
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - exportloopref
+    - ginkgolinter
+    - gci
+    - gocheckcompilerdirectives
+    - gocritic
+    - godot
+    - gofmt
+    - goimports
+    - gosec
+    - gosmopolitan
+    - grouper
+    - importas
+    - ireturn
+    - makezero
+    - mirror
+    - nakedret
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - rowserrcheck
+    - stylecheck
+    - unconvert
+    - wastedassign
+    - whitespace
+    - wsl
+
+# vim: set ft=yaml noet ai ts=4 sw=4 sts=4:

@@ -1,0 +1,127 @@
+cmd_delay: 33
+loop_delay: 5000
+debug: true
+
+kill:
+  - sig: stop
+    name:
+    - commvault
+    - distnoted
+    - coreduetd
+
+prio:
+  - nice: -11
+    name:
+    - coreaudiod
+    - WindowServer
+    - "com.apple.audio.SandboxHelper"
+    - "com.apple.audio.DriverHelper"
+    - audioclocksyncd
+
+  - nice: -5
+    name:
+    - VTDecoderXPCService
+    - "VK Teams"
+    - mDNSResponder
+    - mDNSResponderHelper
+    - AudioComponentRegistrar
+    - CVMServer
+
+  - nice: -3
+    name:
+    - "Karabiner-Elements"
+    - Hammerspoon
+    - MTLCompilerService
+    - "com.apple.appkit.xpc.openAndSavePanelService"
+
+  - nice: 3
+    name:
+    - logd
+    - syslogd
+    - syspolicyd
+    - cron
+    - softwareupdated
+    - "periodic-wrapper"
+    - iconservicesagent
+    - "com.apple.quicklook.ThumbnailsAgent"
+    - appstored
+
+  - nice: 5
+    name:
+    - corebrightnessd
+    - airportd
+    - containermanagerd
+    - searchpartyd
+    - corespeechd
+    - peopled
+    - AssetCacheLocatorService
+    - avatarsd
+    - contactsdonationagent
+    - storedownloadd
+    - "Dock.app"
+    - Dock
+    - Finder
+    - DockHelper
+
+  - nice: 9
+    name:
+    - "Google Chrome"
+    - "Google Chrome Helper"
+    - "EmojiFunction"
+    - "Microsoft Edge Helper"
+    - "Opera Helper"
+    - "UserNotificationCenter"
+
+  - nice: 11
+    name:
+    - siriactionsd
+    - CoreSpotlightService
+    - spotlightknowledged
+    - Spotlight
+    - suggestd
+    - studentd
+    - "com.apple.siri-distributed-evaluation"
+    - "com.apple.CloudPhotosConfiguration"
+
+  - nice: 19
+    name:
+    - coreduetd
+    - endpointsecurityd
+    - analyticsd
+    - backupd
+    - com.apple.CodeSigningHelper
+    - distnoted
+    - "backupd-helper"
+    - JamfDaemon
+    - osqueryd
+    - commvault
+    - diagnosticd
+    - JamfProCommService
+    - XprotectService
+    - XProtectPluginService
+    - "media-indexer"
+    - "com.apple.Safari.SafeBrowsing.Service"
+    - SafariNotificationAgent
+    - AMPArtworkAgent
+    - AMPLibraryAgent
+    - IDSBlastDoorService
+    - photoanalysisd
+    - photolibraryd
+    - "Crash Reports"
+    - mds
+    - mds_stores
+    - mdsync
+    - mdbulkimport
+    - mdworker_shared
+    - osqueryd
+    - opendirectoryd
+    - mediaanalysisd
+    - klnagent
+    - kavd
+    - biomesyncd
+    - siriknowledged
+    - triald
+    - syspolicyd
+
+
+# vim: set ft=yaml et ai ts=2 sw=2 sts=2:
