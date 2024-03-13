@@ -26,7 +26,6 @@ linters:
     - errchkjson
     - errorlint
     - exhaustive
-    - exhaustruct
     - exportloopref
     - ginkgolinter
     - gci

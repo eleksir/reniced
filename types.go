@@ -1,11 +1,17 @@
 package main
 
 type Config struct {
+	// Weather we fork to backgoround or stay as-is.
+	Daemon bool `yaml:"daemon,omitempty"`
+
+	// Where to put pid-file.
+	Pidfile string `yaml:"pidfile,omitempty"`
+
 	// LoopDelay in milliseconds - whole set of action delay period.
-	LoopDelay int `yaml:"loop_delay"`
+	LoopDelay int `yaml:"loop_delay,omitempty"`
 
 	// CmdDelay in milliseconds - delay between each change application.
-	CmdDelay int `yaml:"cmd_delay"`
+	CmdDelay int `yaml:"cmd_delay,omitempty"`
 
 	// Whether to print debug info on stdout.
 	Debug bool `yaml:"debug,omitempty"`

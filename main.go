@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sevlyar/go-daemon"
 	proc "github.com/shirou/gopsutil/v3/process"
 )
 
@@ -22,7 +23,33 @@ func main() {
 		log.Fatalf("unable to parse config: %s", err)
 	}
 
-	// Основной цикл.
+	if cnf.Daemon {
+		cntxt := &daemon.Context{
+			WorkDir: "/",
+			Args:    []string{"reniced"},
+		}
+
+		if cnf.Pidfile != "" {
+			cntxt.PidFileName = cnf.Pidfile
+		}
+
+		if d, err := cntxt.Reborn(); err != nil {
+			log.Fatal("Unable to run: ", err)
+
+			return
+		} else if d != nil {
+			return
+		}
+
+		defer cntxt.Release() //nolint: errcheck
+	}
+
+	// То, ради чего всё затевалось.
+	reniced(cnf)
+}
+
+// reniced основная логика.
+func reniced(cnf Config) {
 	for {
 		processList, err := proc.Processes()
 

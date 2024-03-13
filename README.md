@@ -1,15 +1,15 @@
 # Reniced
 
 Helper utility intended to run as a service or as background process (say in tmux) that can make system more respositive
-under certain load.
+under certain type of load.
 
 ## Why it was made
 
-In general case os can handle load well fairly share resources among processes. But in some cases it make it poorly.
-As an exanple it can be ill-minded pseudo-security stuff like antiviruses or mediaanalysers that searches forbidden
-content on your mac (due to gov.polices that apple have to accept). Or it can be backup that crawls in background.
+In general case os can handle load well, fairly sharing resources among processes. But in some cases it makes it poorly.
+As an example it can be ill-minded pseudo-security stuff like antiviruses or mediaanalysers that searches forbidden
+content on your mac (due to gov.polices that apple have to accept). Or it can be backup that crawls fs in background.
 
-To help resolve such situation this utility was made. Some malicious processes can be renice to lower nicelevels (say,
+To help resolve such situation this utility was made. Some malicious processes can be reniced to lower nicelevels (say,
 19) and for some good processes nicelevel can be rised to higher values(-19 if reniced run as superuser or 0 if as
 normal).
 

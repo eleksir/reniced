@@ -1,57 +1,85 @@
+# Fork and run as real unix daemon.
+daemon: true
+# PID file for daemon.
+pidfile: /var/run/reniced.pid
+# Delay between subsequent renices or kills, to lower cpu load peaks.
 cmd_delay: 33
+# Delay among iterations.
 loop_delay: 5000
+# Wheather to print debug messages to stdout.
 debug: true
 
 kill:
   - sig: stop
     name:
+    # Backup program. I don't really want it, but have to keep.
     - commvault
+    # Distributed notification service. Sometimes can be naughty.
     - distnoted
+    # This service can be greedy and may make kernel_tak to hig cpu too
     - coreduetd
 
 prio:
   - nice: -11
     name:
+    # Main audio service, to play sounds smoothly, must have high prio.
     - coreaudiod
+    # Window manager service.
     - WindowServer
+    # Isolation helper.
     - "com.apple.audio.SandboxHelper"
+    # Audio driver helper.
     - "com.apple.audio.DriverHelper"
+    # Used for syncing timers for different audio sources.
     - audioclocksyncd
 
   - nice: -5
     name:
+    # Video playback helper.
     - VTDecoderXPCService
+    # Corporate messenger.
     - "VK Teams"
+    # Responds to apple broadcast dns requests. In linux world it is avahi.
     - mDNSResponder
+    # Helper service for mDNSResponder.
     - mDNSResponderHelper
+    # Part of AudioToolbox framework.
     - AudioComponentRegistrar
+    # Mac OS X Core Virtual Machine Server. Something related to isolation of system processes.
     - CVMServer
 
   - nice: -3
     name:
+    # 3-rd party tool to make tricks with keyboard. (remap/swap buttons)
     - "Karabiner-Elements"
+    # 3-rd party tool to automate routine actions.
     - Hammerspoon
+    # Compiler for metal shaders, that can pass information directly to the GPU.
     - MTLCompilerService
-    - "com.apple.appkit.xpc.openAndSavePanelService"
 
   - nice: 3
     name:
+    # System logger.
     - logd
+    # System logger.
     - syslogd
+    # Something related to binary signature checks. To ensure system integrity. Part of DRM protection.
+    # It rubs berfore application starts, so we definitely don't want to low its prio heavily.
     - syspolicyd
+    # Unix periodic task scheduler.
     - cron
+    # Ditto.
     - softwareupdated
+    # Handles the scheduling of the periodic command
     - "periodic-wrapper"
-    - iconservicesagent
-    - "com.apple.quicklook.ThumbnailsAgent"
     - appstored
 
   - nice: 5
     name:
+    # Dynamic brightness tuning service.
     - corebrightnessd
     - airportd
     - containermanagerd
-    - searchpartyd
     - corespeechd
     - peopled
     - AssetCacheLocatorService
@@ -121,7 +149,5 @@ prio:
     - biomesyncd
     - siriknowledged
     - triald
-    - syspolicyd
-
 
 # vim: set ft=yaml et ai ts=2 sw=2 sts=2:

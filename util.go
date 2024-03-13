@@ -52,8 +52,6 @@ func readConf(path string) (Config, error) {
 
 	if cfg.Debug {
 		log.Println("debug set to true")
-	} else {
-		log.Println("debug set to false")
 	}
 
 	newPrio := make(Prio, 0)
