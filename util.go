@@ -22,7 +22,7 @@ func readConf(path string) (Config, error) {
 
 	// Конфиг-файл длинноват для конфига, попробуем следующего кандидата.
 	if fileInfo.Size() > 65535 {
-		err := fmt.Errorf("Config file %s is too long for config, skipping", path)
+		err := fmt.Errorf("config file %s is too long for config, skipping", path)
 
 		return Config{}, err
 	}
@@ -39,19 +39,32 @@ func readConf(path string) (Config, error) {
 	}
 
 	if cfg.CmdDelay == 0 {
-		log.Println("cmd_delay can not be 0, setting to 200 milliseconds")
-
-		cfg.CmdDelay = 200
+		cfg.CmdDelay = 20
+		log.Println("cmd_delay can not be 0, setting to %d milliseconds", cfg.CmdDelay)
 	}
 
 	if cfg.LoopDelay == 0 {
-		log.Println("loop_delay can not be 0, setting to 2000 milliseconds")
-
 		cfg.LoopDelay = 2000
+		log.Printf("loop_delay set to %d milliseconds", cfg.LoopDelay)
 	}
 
 	if cfg.Debug {
 		log.Println("debug set to true")
+	}
+
+	if cfg.MaxWorkers == 0 {
+		cfg.MaxWorkers = 5
+		log.Printf("max_workers set to %d", cfg.MaxWorkers)
+	}
+
+	if cfg.NbCapacity == 0 {
+		cfg.NbCapacity = 100
+		log.Printf("nb_capacity set to %d", cfg.NbCapacity)
+	}
+
+	if cfg.NbCapacity < cfg.MaxWorkers {
+		cfg.NbCapacity = cfg.MaxWorkers
+		log.Printf("nb_capacity set to same value as max_workers: %d", cfg.MaxWorkers)
 	}
 
 	newPrio := make(Prio, 0)

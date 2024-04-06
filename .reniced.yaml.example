@@ -1,13 +1,24 @@
 # Fork and run as real unix daemon.
 daemon: true
+
 # PID file for daemon.
 pidfile: /var/run/reniced.pid
-# Delay between subsequent renices or kills, to lower cpu load peaks.
-cmd_delay: 33
+
+# Delay between addition and execution of tasks to task pool, to lower cpu load peaks.
+cmd_delay: 20
+
 # Delay among iterations.
 loop_delay: 5000
-# Wheather to print debug messages to stdout.
+
+# Whether to print debug messages to stdout.
 debug: true
+
+# Maximum worker in command pool.
+max_workers: 3
+
+# Capacity of non-blocking tasks. All tasks that exceeding this capacity will block submission of new tasks until queue
+# has vacant place for new task.
+nb_capacity: 30
 
 kill:
   - sig: stop
