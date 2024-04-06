@@ -1,16 +1,16 @@
 # Reniced
 
-Helper utility intended to run as a service or as background process (say in tmux) that can make system more respositive
-under certain type of load.
+Helper utility intended to run as a service or as background process (say, in tmux) that can make system more
+respositive under certain type of load.
 
 ## Why it was made
 
 In general case os can handle load well, fairly sharing resources among processes. But in some cases it makes it poorly.
 As an example it can be ill-minded pseudo-security stuff like antiviruses or mediaanalysers that searches forbidden
-content on your mac (due to gov.polices that apple have to accept). Or it can be backup that crawls fs in background.
+content on your mac (due to gov.policies that apple have to accept). Or it can be backup that crawls fs in background.
 
 To help resolve such situation this utility was made. Some malicious processes can be reniced to lower nicelevels (say,
-19) and for some good processes nicelevel can be rised to higher values(-19 if reniced run as superuser or 0 if as
+19) and for some good processes nicelevel can be raisen to higher values (-19 if reniced run as superuser or 0 if as
 normal).
 
 In some critical cases process can be killed (if you want to know more about it see "man kill" in terminal).
@@ -19,7 +19,7 @@ In some critical cases process can be killed (if you want to know more about it 
 
 You will need Go lang 1.21 or newer, gnu make, terminal and possibly internets to build this utility.
 
-To build reniced just type in src dir
+To build reniced just type in project dir
 
 ```bash
 make
@@ -40,7 +40,13 @@ if you have no access to superuser or
 sudo ./reniced
 ```
 
-if you can sudo. Thats it.
+if you can sudo. That's it.
+
+Note: negative niceness values can be set only by root.
+
+Note2: MacOS has too tight (or intrusive) security measures, so running something as system daemon is very difficult
+task. Reniced can be run via sudo as daemon or backbround process (say, in tmux). On linux systems usually there is no
+such obstacle and if reniced run from user with id=0, its config should be placed at **/etc/reniced.yaml**
 
 ## Special "thanks"
 
