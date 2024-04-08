@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"os/user"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -42,7 +43,7 @@ func main() {
 	}
 
 	// Для рута и для других пользователей конфиги находятся в разных местах.
-	if u.Uid != "0" {
+	if u.Uid != "0" || runtime.GOOS == "darwin" {
 		if os.Getenv("HOME") == "" {
 			log.Fatalln("Unable to get HOME environment variable value")
 		}
