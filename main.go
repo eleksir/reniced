@@ -101,106 +101,104 @@ func reniced(cnf Config) {
 		for _, p := range processList {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
-					for _, k := range cnf.Kill {
-						if killSignal := kill[processName]; killSignal != "" {
-							switch killSignal {
-							case "kill":
-								_ = p.SendSignal(syscall.SIGKILL)
+					if killSignal := kill[processName]; killSignal != "" {
+						switch killSignal {
+						case "kill":
+							_ = p.SendSignal(syscall.SIGKILL)
+
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "stop":
+							if s, err := p.Status(); err == nil && s[0] != "stop" {
+								_ = p.SendSignal(syscall.SIGSTOP)
 
 								if cnf.Debug {
 									log.Printf(
 										"Matching processName with killProcessname (%s), SIG%s sent",
 										processName,
-										strings.ToUpper(k.Sig),
+										strings.ToUpper(killSignal),
 									)
 								}
-							case "stop":
-								if s, err := p.Status(); err == nil && s[0] != "stop" {
-									_ = p.SendSignal(syscall.SIGSTOP)
+							} else if err == nil && s[0] == "stop" && cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s) and it is already stopped",
+									processName,
+								)
+							}
+						case "term":
+							_ = p.SendSignal(syscall.SIGTERM)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								} else if err == nil && s[0] == "stop" && cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s) and it is already stopped",
-										processName,
-									)
-								}
-							case "term":
-								_ = p.SendSignal(syscall.SIGTERM)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "int":
+							_ = p.SendSignal(syscall.SIGINT)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "int":
-								_ = p.SendSignal(syscall.SIGINT)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "quit":
+							_ = p.SendSignal(syscall.SIGQUIT)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "quit":
-								_ = p.SendSignal(syscall.SIGQUIT)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "abrt":
+							_ = p.SendSignal(syscall.SIGABRT)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "abrt":
-								_ = p.SendSignal(syscall.SIGABRT)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "hup":
+							_ = p.SendSignal(syscall.SIGHUP)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "hup":
-								_ = p.SendSignal(syscall.SIGHUP)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "usr1":
+							_ = p.SendSignal(syscall.SIGUSR1)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "usr1":
-								_ = p.SendSignal(syscall.SIGUSR1)
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
+							}
+						case "usr2":
+							_ = p.SendSignal(syscall.SIGUSR2)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
-							case "usr2":
-								_ = p.SendSignal(syscall.SIGUSR2)
-
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(k.Sig),
-									)
-								}
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal),
+								)
 							}
 						}
 					}
