@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"os"
 	"os/signal"
 	"os/user"
@@ -20,6 +21,9 @@ var pool *pond.WorkerPool
 
 // Канал, в который приходят уведомления для хэндлера сигналов от траппера сигналов.
 var sigChan = make(chan os.Signal, 1)
+
+var kill = make(map[string]string)
+var renice = make(map[string]int)
 
 // main основная функция программы.
 func main() {
@@ -98,11 +102,21 @@ func reniced(cnf Config) {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
 					for _, k := range cnf.Kill {
-						for _, killProcessName := range k.Name {
-							if processName == killProcessName {
-								switch k.Sig {
-								case "kill":
-									_ = p.SendSignal(syscall.SIGKILL)
+						if killSignal := kill[processName]; killSignal != "" {
+							switch killSignal {
+							case "kill":
+								_ = p.SendSignal(syscall.SIGKILL)
+
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "stop":
+								if s, err := p.Status(); err == nil && s[0] != "stop" {
+									_ = p.SendSignal(syscall.SIGSTOP)
 
 									if cnf.Debug {
 										log.Printf(
@@ -111,125 +125,121 @@ func reniced(cnf Config) {
 											strings.ToUpper(k.Sig),
 										)
 									}
-								case "stop":
-									if s, err := p.Status(); err == nil && s[0] != "stop" {
-										_ = p.SendSignal(syscall.SIGSTOP)
+								} else if err == nil && s[0] == "stop" && cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s) and it is already stopped",
+										processName,
+									)
+								}
+							case "term":
+								_ = p.SendSignal(syscall.SIGTERM)
 
-										if cnf.Debug {
-											log.Printf(
-												"Matching processName with killProcessname (%s), SIG%s sent",
-												processName,
-												strings.ToUpper(k.Sig),
-											)
-										}
-									} else if err == nil && s[0] == "stop" && cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s) and it is already stopped",
-											processName,
-										)
-									}
-								case "term":
-									_ = p.SendSignal(syscall.SIGTERM)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "int":
+								_ = p.SendSignal(syscall.SIGINT)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "int":
-									_ = p.SendSignal(syscall.SIGINT)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "quit":
+								_ = p.SendSignal(syscall.SIGQUIT)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "quit":
-									_ = p.SendSignal(syscall.SIGQUIT)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "abrt":
+								_ = p.SendSignal(syscall.SIGABRT)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "abrt":
-									_ = p.SendSignal(syscall.SIGABRT)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "hup":
+								_ = p.SendSignal(syscall.SIGHUP)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "hup":
-									_ = p.SendSignal(syscall.SIGHUP)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "usr1":
+								_ = p.SendSignal(syscall.SIGUSR1)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "usr1":
-									_ = p.SendSignal(syscall.SIGUSR1)
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
+								}
+							case "usr2":
+								_ = p.SendSignal(syscall.SIGUSR2)
 
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
-								case "usr2":
-									_ = p.SendSignal(syscall.SIGUSR2)
-
-									if cnf.Debug {
-										log.Printf(
-											"Matching processName with killProcessname (%s), SIG%s sent",
-											processName,
-											strings.ToUpper(k.Sig),
-										)
-									}
+								if cnf.Debug {
+									log.Printf(
+										"Matching processName with killProcessname (%s), SIG%s sent",
+										processName,
+										strings.ToUpper(k.Sig),
+									)
 								}
 							}
 						}
 					}
 
-					// Для каждого процесса извлекаем его текущий nicelevel.
-					if currentNiceLevel, err := p.Nice(); err == nil {
-						// Вынимаем список приоритетов.
-						for _, n := range cnf.Prio {
-							// Для каждого приоритета, проходимся по списку имён процессов.
-							for _, name := range n.Name {
-								// Достаём имя текущего процесса.
-								if processName, err = p.Name(); err == nil {
-									// Если имя процесса совпадает с одним из списка в конфиге, то пробуем менять ему nice.
-									if processName == name {
-										if currentNiceLevel != n.Nice {
-											_ = syscall.Setpriority(syscall.PRIO_PROCESS, int(p.Pid), int(n.Nice))
+					// Для каждого процесса извлекаем его текущий priority.
+					if currentPrioLevel, err := syscall.Getpriority(syscall.PRIO_PROCESS, int(p.Pid)); err == nil {
+						if niceLevel := renice[processName]; niceLevel != 0 {
+							prioLevel := niceLevel
+							currentNiceLevel := currentPrioLevel
 
-											if cnf.Debug {
-												log.Printf(
-													"Set niceness for %s(%d) to %d (was %d)",
-													name,
-													p.Pid,
-													n.Nice,
-													currentNiceLevel,
-												)
-											}
-										} else if cnf.Debug {
-											log.Printf("Nicelevel for %d already set to %d", p.Pid, n.Nice)
-										}
-									}
+							if runtime.GOOS == "linux" {
+								// Value of PR = 20 + (-20 to +19) is 0 to 39
+								switch {
+								case niceLevel > 0:
+									prioLevel = 20 - niceLevel
+								case niceLevel < 0:
+									prioLevel = 20 + int(math.Abs(float64(niceLevel)))
+								default:
+									prioLevel = 20
 								}
+
+								currentNiceLevel = 20 - currentPrioLevel
+							}
+
+							if currentPrioLevel != prioLevel {
+								// on Linux Setpriority actually operates niceness value.
+								_ = syscall.Setpriority(syscall.PRIO_PROCESS, int(p.Pid), niceLevel)
+
+								if cnf.Debug {
+									log.Printf(
+										"Set niceness for %s(%d) to %d (was %d)",
+										processName,
+										p.Pid,
+										niceLevel,
+										currentNiceLevel,
+									)
+								}
+							} else if cnf.Debug {
+								log.Printf("Niceness for %d already set to %d", p.Pid, niceLevel)
 							}
 						}
 					}

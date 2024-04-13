@@ -40,7 +40,7 @@ func readConf(path string) (Config, error) {
 
 	if cfg.CmdDelay == 0 {
 		cfg.CmdDelay = 20
-		log.Println("cmd_delay can not be 0, setting to %d milliseconds", cfg.CmdDelay)
+		log.Printf("cmd_delay can not be 0, setting to %d milliseconds", cfg.CmdDelay)
 	}
 
 	if cfg.LoopDelay == 0 {
@@ -67,10 +67,8 @@ func readConf(path string) (Config, error) {
 		log.Printf("nb_capacity set to same value as max_workers: %d", cfg.MaxWorkers)
 	}
 
-	newPrio := make(Prio, 0)
-
 	// Обычный юзер не может задрать nice больше 0, только руту такое можно.
-	var maxNice int32
+	var maxNice int
 
 	if os.Getuid() == 0 {
 		maxNice = -20
@@ -79,10 +77,10 @@ func readConf(path string) (Config, error) {
 	for _, v := range cfg.Prio {
 		switch {
 		case len(v.Name) != 0 && (v.Nice < 20 && v.Nice > maxNice):
-			newPrio = append(newPrio, v)
+			for _, procName := range v.Name {
+				renice[procName] = v.Nice
 
-			if cfg.Debug {
-				for _, procName := range v.Name {
+				if cfg.Debug {
 					log.Printf("Add %s to list of nicelevel %d processes.", procName, v.Nice)
 				}
 			}
@@ -93,18 +91,14 @@ func readConf(path string) (Config, error) {
 		}
 	}
 
-	cfg.Prio = newPrio
-
-	newKill := make(Kill, 0)
-
 	for _, v := range cfg.Kill {
 		if len(v.Name) != 0 {
 			switch v.Sig {
 			case "kill", "stop", "term", "int", "quit", "abrt", "hup", "usr1", "usr2":
-				newKill = append(newKill, v)
+				for _, procName := range v.Name {
+					kill[procName] = v.Sig
 
-				if cfg.Debug {
-					for _, procName := range v.Name {
+					if cfg.Debug {
 						log.Printf(
 							"Add %s to list of processes that should be killed with SIG%s signal.",
 							procName,
@@ -119,8 +113,6 @@ func readConf(path string) (Config, error) {
 			log.Println("Skipping empty entry in kill config block")
 		}
 	}
-
-	cfg.Kill = newKill
 
 	return cfg, nil
 }

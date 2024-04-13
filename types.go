@@ -32,7 +32,7 @@ type Config struct {
 }
 
 type Prio []struct {
-	Nice int32    `yaml:"nice,omitempty"`
+	Nice int      `yaml:"nice,omitempty"`
 	Name []string `yaml:"name,omitempty"`
 }
 
