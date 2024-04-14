@@ -88,7 +88,8 @@ func main() {
 
 // reniced основная логика.
 func reniced(cnf Config) {
-	pool = pond.New(cnf.MaxWorkers, cnf.NbCapacity)
+	// Создаём пул со статическим количеством воркеров и длиной очереди неблокируемых задач, равной NbCapacity.
+	pool = pond.New(cnf.MaxWorkers, cnf.NbCapacity, pond.Strategy(pond.Lazy()))
 
 	for {
 		processList, err := proc.Processes()
@@ -102,7 +103,7 @@ func reniced(cnf Config) {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
 					if killSignal := kill[processName]; killSignal != 0 {
-						switch killSignal {
+						switch killSignal { //nolint:exhaustive
 						case syscall.SIGSTOP:
 							_ = p.SendSignal(killSignal)
 
@@ -177,7 +178,10 @@ func reniced(cnf Config) {
 
 		time.Sleep(time.Millisecond * time.Duration(cnf.LoopDelay))
 	}
-}
+
+	// Мы сюда никогда не попадём.
+	// pool.StopAndWait()
+} //nolint:wsl
 
 // sigHandler хэндлер сигналов. Работает на выходе приложения. Держит INT, TERM, QUIT.
 func sigHandler() {
