@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"syscall"
 
 	"gopkg.in/yaml.v3"
 )
@@ -96,7 +97,28 @@ func readConf(path string) (Config, error) {
 			switch v.Sig {
 			case "kill", "stop", "term", "int", "quit", "abrt", "hup", "usr1", "usr2":
 				for _, procName := range v.Name {
-					kill[procName] = v.Sig
+					switch v.Sig {
+					case "kill":
+						kill[procName] = syscall.SIGKILL
+					case "stop":
+						kill[procName] = syscall.SIGSTOP
+					case "term":
+						kill[procName] = syscall.SIGTERM
+					case "int":
+						kill[procName] = syscall.SIGINT
+					case "quit":
+						kill[procName] = syscall.SIGQUIT
+					case "abrt":
+						kill[procName] = syscall.SIGABRT
+					case "hup":
+						kill[procName] = syscall.SIGHUP
+					case "usr1":
+						kill[procName] = syscall.SIGUSR1
+					case "usr2":
+						kill[procName] = syscall.SIGUSR2
+					default:
+						continue
+					}
 
 					if cfg.Debug {
 						log.Printf(

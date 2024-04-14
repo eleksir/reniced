@@ -22,7 +22,7 @@ var pool *pond.WorkerPool
 // Канал, в который приходят уведомления для хэндлера сигналов от траппера сигналов.
 var sigChan = make(chan os.Signal, 1)
 
-var kill = make(map[string]string)
+var kill = make(map[string]syscall.Signal)
 var renice = make(map[string]int)
 
 // main основная функция программы.
@@ -101,103 +101,27 @@ func reniced(cnf Config) {
 		for _, p := range processList {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
-					if killSignal := kill[processName]; killSignal != "" {
+					if killSignal := kill[processName]; killSignal != 0 {
 						switch killSignal {
-						case "kill":
-							_ = p.SendSignal(syscall.SIGKILL)
+						case syscall.SIGSTOP:
+							_ = p.SendSignal(killSignal)
 
 							if cnf.Debug {
 								log.Printf(
 									"Matching processName with killProcessname (%s), SIG%s sent",
 									processName,
-									strings.ToUpper(killSignal),
+									strings.ToUpper(killSignal.String()),
 								)
 							}
-						case "stop":
-							if s, err := p.Status(); err == nil && s[0] != "stop" {
-								_ = p.SendSignal(syscall.SIGSTOP)
 
-								if cnf.Debug {
-									log.Printf(
-										"Matching processName with killProcessname (%s), SIG%s sent",
-										processName,
-										strings.ToUpper(killSignal),
-									)
-								}
-							} else if err == nil && s[0] == "stop" && cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s) and it is already stopped",
-									processName,
-								)
-							}
-						case "term":
-							_ = p.SendSignal(syscall.SIGTERM)
+						default:
+							_ = p.SendSignal(killSignal)
 
 							if cnf.Debug {
 								log.Printf(
 									"Matching processName with killProcessname (%s), SIG%s sent",
 									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "int":
-							_ = p.SendSignal(syscall.SIGINT)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "quit":
-							_ = p.SendSignal(syscall.SIGQUIT)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "abrt":
-							_ = p.SendSignal(syscall.SIGABRT)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "hup":
-							_ = p.SendSignal(syscall.SIGHUP)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "usr1":
-							_ = p.SendSignal(syscall.SIGUSR1)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
-								)
-							}
-						case "usr2":
-							_ = p.SendSignal(syscall.SIGUSR2)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal),
+									strings.ToUpper(killSignal.String()),
 								)
 							}
 						}
