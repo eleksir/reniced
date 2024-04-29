@@ -86,31 +86,6 @@ func reniced(cnf Config) {
 		for _, p := range processList {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
-					if killSignal := kill[processName]; killSignal != 0 {
-						switch killSignal { //nolint:exhaustive
-						case syscall.SIGSTOP:
-							_ = p.SendSignal(killSignal)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal.String()),
-								)
-							}
-
-						default:
-							_ = p.SendSignal(killSignal)
-
-							if cnf.Debug {
-								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
-									processName,
-									strings.ToUpper(killSignal.String()),
-								)
-							}
-						}
-					}
 
 					// Для каждого процесса извлекаем его текущий priority.
 					if currentPrioLevel, err := syscall.Getpriority(syscall.PRIO_PROCESS, int(p.Pid)); err == nil {
@@ -147,6 +122,33 @@ func reniced(cnf Config) {
 								}
 							} else if cnf.Debug {
 								log.Printf("Niceness for %d already set to %d", p.Pid, niceLevel)
+							}
+						}
+					}
+
+					// Посылаем процессу сигналы, если таковые есть в конфиге.
+					if killSignal := kill[processName]; killSignal != 0 {
+						switch killSignal { //nolint:exhaustive
+						case syscall.SIGSTOP:
+							_ = p.SendSignal(killSignal)
+
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal.String()),
+								)
+							}
+
+						default:
+							_ = p.SendSignal(killSignal)
+
+							if cnf.Debug {
+								log.Printf(
+									"Matching processName with killProcessname (%s), SIG%s sent",
+									processName,
+									strings.ToUpper(killSignal.String()),
+								)
 							}
 						}
 					}
