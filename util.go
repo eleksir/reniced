@@ -4,14 +4,44 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
+	"runtime"
 	"strings"
 	"syscall"
 
 	"gopkg.in/yaml.v3"
 )
 
-// readConf парсит даденный конфиг в глобальную структуру, с которой работает программа.
-func readConf(path string) (Config, error) {
+// readConf вычиляет, от какого пользователя запущен процесс и в зависимости от результата, скармливает readConfFile тот
+// или иной путь, по которому предположительно лежит конфиг.
+func readConf() (Config, error) {
+	var (
+		cnf Config
+		err error
+	)
+
+	u, err := user.Current()
+
+	if err != nil {
+		log.Fatalf("Unable to get user info for current user: %s", err)
+	}
+
+	// Для рута и для других пользователей конфиги находятся в разных местах.
+	if u.Uid != "0" || runtime.GOOS == "darwin" {
+		if os.Getenv("HOME") == "" {
+			log.Fatalln("Unable to get HOME environment variable value")
+		}
+
+		cnf, err = readConfFile(os.Getenv("HOME") + "/.reniced.yaml")
+	} else {
+		cnf, err = readConfFile("/etc/reniced.yaml")
+	}
+
+	return cnf, err
+}
+
+// readConfFile парсит даденный конфиг в глобальную структуру, с которой работает программа.
+func readConfFile(path string) (Config, error) {
 	var cfg Config
 
 	fileInfo, err := os.Stat(path)

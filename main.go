@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 	"os/signal"
-	"os/user"
 	"runtime"
 	"strings"
 	"syscall"
@@ -40,22 +39,7 @@ func main() {
 		err error
 	)
 
-	u, err := user.Current()
-
-	if err != nil {
-		log.Fatalf("Unable to get user info for current user: %s", err)
-	}
-
-	// Для рута и для других пользователей конфиги находятся в разных местах.
-	if u.Uid != "0" || runtime.GOOS == "darwin" {
-		if os.Getenv("HOME") == "" {
-			log.Fatalln("Unable to get HOME environment variable value")
-		}
-
-		cnf, err = readConf(os.Getenv("HOME") + "/.reniced.yaml")
-	} else {
-		cnf, err = readConf("/etc/reniced.yaml")
-	}
+	cnf, err = readConf()
 
 	if err != nil {
 		log.Fatalf("unable to parse config: %s", err)
@@ -200,6 +184,7 @@ func sigHandler() {
 			continue
 		}
 
+		// Закрываем пул воркеров и освобождаем ресурсы.
 		pool.StopAndWait()
 
 		os.Exit(0)
