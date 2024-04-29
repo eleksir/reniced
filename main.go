@@ -15,15 +15,6 @@ import (
 	proc "github.com/shirou/gopsutil/v3/process"
 )
 
-// Пул воркеров.
-var pool *pond.WorkerPool
-
-// Канал, в который приходят уведомления для хэндлера сигналов от траппера сигналов.
-var sigChan = make(chan os.Signal, 1)
-
-var kill = make(map[string]syscall.Signal)
-var renice = make(map[string]int)
-
 // main основная функция программы.
 func main() {
 	// Самое время поставить траппер сигналов.
@@ -86,7 +77,6 @@ func reniced(cnf Config) {
 		for _, p := range processList {
 			ok := pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
-
 					// Для каждого процесса извлекаем его текущий priority.
 					if currentPrioLevel, err := syscall.Getpriority(syscall.PRIO_PROCESS, int(p.Pid)); err == nil {
 						if niceLevel := renice[processName]; niceLevel != 0 {
@@ -121,10 +111,17 @@ func reniced(cnf Config) {
 									)
 								}
 							} else if cnf.Debug {
-								log.Printf("Niceness for %d already set to %d", p.Pid, niceLevel)
+								log.Printf(
+									"Niceness for %s(%d) already set to %d",
+									processName,
+									p.Pid,
+									niceLevel,
+								)
 							}
 						}
 					}
+
+					IORenice(cnf, p, processName)
 
 					// Посылаем процессу сигналы, если таковые есть в конфиге.
 					if killSignal := kill[processName]; killSignal != 0 {
@@ -134,8 +131,9 @@ func reniced(cnf Config) {
 
 							if cnf.Debug {
 								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
+									"Matching processName with killProcessname %s(%d), SIG%s sent",
 									processName,
+									p.Pid,
 									strings.ToUpper(killSignal.String()),
 								)
 							}
@@ -145,8 +143,9 @@ func reniced(cnf Config) {
 
 							if cnf.Debug {
 								log.Printf(
-									"Matching processName with killProcessname (%s), SIG%s sent",
+									"Matching processName with killProcessname %s(%d), SIG%s sent",
 									processName,
+									p.Pid,
 									strings.ToUpper(killSignal.String()),
 								)
 							}

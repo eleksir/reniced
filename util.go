@@ -122,6 +122,33 @@ func readConfFile(path string) (Config, error) {
 		}
 	}
 
+	for _, v := range cfg.IOPrio {
+		switch {
+		case len(v.Name) == 0:
+			log.Println("Skipping empty name entry in ioprio config block")
+		case v.Class > 3:
+			log.Printf("Skipping entry %s with class > 3 in ioprio config block", v.Name)
+		case v.Class == 0 && v.Prio != 0:
+			log.Printf("Skipping entry %s with class 0 and prio not 0 in ioprio config block", v.Name)
+		case v.Class == 3 && v.Prio != 0:
+			log.Printf("Skipping entry %s with class 3 and prio not 0 in ioprio config block", v.Name)
+		case v.Class == 1 && v.Prio > 7:
+			log.Printf("Skipping entry %s with class 1 and prio > 7 in ioprio config block", v.Name)
+		case v.Class == 2 && v.Prio > 7:
+			log.Printf("Skipping entry %s with class 2 and prio > 7 in ioprio config block", v.Name)
+		default:
+			for _, processName := range v.Name {
+				ioreniceClass[processName] = v.Class
+				ioreniceClassdata[processName] = v.Prio
+
+				if cfg.Debug {
+					log.Printf("Add %s to list of ionice class %d processes.", processName, v.Class)
+					log.Printf("Add %s to list of ionice prio %d processes.", processName, v.Prio)
+				}
+			}
+		}
+	}
+
 	for _, v := range cfg.Kill {
 		if len(v.Name) != 0 {
 			switch v.Sig {

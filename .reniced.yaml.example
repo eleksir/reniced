@@ -161,4 +161,12 @@ prio:
     - siriknowledged
     - triald
 
+ioprio:
+    - name:
+      - htop
+      - top
+      - atop
+      class: 2
+      prio: 1
+
 # vim: set ft=yaml et ai ts=2 sw=2 sts=2:

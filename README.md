@@ -60,6 +60,27 @@ Unlike supplpied systemd unit, supplied System V Init script assumes reniced run
 setting must be set to true). Script also expects to find pid-file at **/var/run/reniced.pid** and executable itself at
 **/usr/sbin/reniced**.
 
+## Note on ionice operation
+
+Currently implemented only linux io prio. On all other reniced-supported systems it is noop. Please note that io
+priority can be set only by digits. Refer to *man ionice* for specific io classes and priorities inplemented there.
+
+Here is table with numbers for defined class and priorities.
+
+| class name | class number | list of possible priorities |
+|:-----------|-------------:|----------------------------:|
+| NONE       |0             |0                            |
+| RealTime   |1             |0, 1, 2, 3, 4, 5, 6, 7       |
+| BestEffort |2             |0, 1, 2, 3, 4, 5, 6, 7       |
+| Idle       |3             |0                            |
+
+None is default io prio if process is not ioreniced. And it is the same value and behaviour as BestEffort with priority
+of 4.
+
+The lower priority value means higher priority and process will eat more io.
+
+RealTime prio is not available for regular users but for root only.
+
 ## Special "thanks"
 
 To security assholes that disrupt workflows and make this world worse.

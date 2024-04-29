@@ -1,15 +1,13 @@
 #!/usr/bin/env gmake -f
 
 BUILDOPTS=-ldflags="-s -w" -a -gcflags=all=-l -trimpath
-FILELIST=main.go types.go util.go
 
 BINARY=reniced
 
 all: clean build
 
 build:
-	go build ${BUILDOPTS} -o ${BINARY} ${FILELIST}
-
+	go build ${BUILDOPTS} -o ${BINARY}
 clean:
 	go clean
 

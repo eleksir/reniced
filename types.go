@@ -29,6 +29,8 @@ type Config struct {
 	Kill Kill `yaml:"kill,omitempty"`
 
 	Prio Prio `yaml:"prio,omitempty"`
+
+	IOPrio IOPrio `yaml:"ioprio,omitempty"`
 }
 
 type Prio []struct {
@@ -39,6 +41,12 @@ type Prio []struct {
 type Kill []struct {
 	Sig  string   `yaml:"sig,omitempty"`
 	Name []string `yaml:"name,omitempty"`
+}
+
+type IOPrio []struct {
+	Class uint32   `yaml:"class,omitempty"`
+	Prio  uint32   `yaml:"prio,omitempty"`
+	Name  []string `yaml:"name,omitempty"`
 }
 
 /* vim: set ft=go noet ai ts=4 sw=4 sts=4: */
