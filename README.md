@@ -48,6 +48,18 @@ Note2: MacOS has too tight (or intrusive) security measures, so running somethin
 task. Reniced can be run via sudo as daemon or backbround process (say, in tmux). On linux systems usually there is no
 such obstacle and if reniced run from user with id=0, its config should be placed at **/etc/reniced.yaml**
 
+## Install as systemd service
+
+Supplied systemd unit is ready to install in system as-is and should work ok. It expect to see reniced at
+**/usr/sbin/reniced** and assume that reniced runs as foreground task - in config file "daemon" setting either absent or
+set to false.
+
+## Install as System V Init service
+
+Unlike supplpied systemd unit, supplied System V Init script assumes reniced runs as daemon (in config file "daemon"
+setting must be set to true). Script also expects to find pid-file at **/var/run/reniced.pid** and executable itself at
+**/usr/sbin/reniced**.
+
 ## Special "thanks"
 
 To security assholes that disrupt workflows and make this world worse.
