@@ -81,6 +81,16 @@ The lower priority value means higher priority and process will eat more io.
 
 RealTime prio is not available for regular users but for root only.
 
+## Note #2 on ionice operation on Mac OS / Darwin
+
+The only working official method for Apple OS is via taskpolicy utility that comes with Mac OS itself. (Unlimited kernel
+API calls requires that calling binary being signed by Apple Inc itself) In context of this program such method is
+inefficient and beacuse of that mostly likely io task policy for mac os will not be implemented.
+
+## *BSD porting help needed :)
+
+Indeed. If you have some time and will to add this functionality PRs are welcome!
+
 ## Special "thanks"
 
 To security assholes that disrupt workflows and make this world worse.
