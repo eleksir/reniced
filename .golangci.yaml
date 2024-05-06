@@ -1,10 +1,11 @@
 run:
   tests: false
-  skip-dirs:
-    - vendor
   modules-download-mode: readonly
   allow-parallel-runners: true
   go: '1.21'
+issues:
+  skip-dirs:
+    - vendor
 output:
   sort-results: true
 linters:
