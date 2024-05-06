@@ -4,9 +4,6 @@ daemon: true
 # PID file for daemon.
 pidfile: /var/run/reniced.pid
 
-# Delay between addition and execution of tasks to task pool, to lower cpu load peaks.
-cmd_delay: 20
-
 # Delay among iterations.
 loop_delay: 5000
 

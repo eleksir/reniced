@@ -157,8 +157,6 @@ func reniced(cnf Config) {
 			if !ok {
 				log.Printf("Unable to add task to pool")
 			}
-
-			time.Sleep(time.Millisecond * time.Duration(cnf.CmdDelay))
 		}
 
 		time.Sleep(time.Millisecond * time.Duration(cnf.LoopDelay))

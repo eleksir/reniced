@@ -10,9 +10,6 @@ type Config struct {
 	// LoopDelay in milliseconds - whole set of action delay period.
 	LoopDelay int `yaml:"loop_delay,omitempty"`
 
-	// CmdDelay in milliseconds - delay between each change application.
-	CmdDelay int `yaml:"cmd_delay,omitempty"`
-
 	// Whether to print debug info on stdout.
 	Debug bool `yaml:"debug,omitempty"`
 
