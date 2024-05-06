@@ -69,11 +69,6 @@ func readConfFile(path string) (Config, error) {
 		return Config{}, err
 	}
 
-	if cfg.CmdDelay == 0 {
-		cfg.CmdDelay = 20
-		log.Printf("cmd_delay can not be 0, setting to %d milliseconds", cfg.CmdDelay)
-	}
-
 	if cfg.LoopDelay == 0 {
 		cfg.LoopDelay = 2000
 		log.Printf("loop_delay set to %d milliseconds", cfg.LoopDelay)
