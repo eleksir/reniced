@@ -34,7 +34,11 @@ func readConf() (Config, error) {
 
 		cnf, err = readConfFile(os.Getenv("HOME") + "/.reniced.yaml")
 	} else {
-		cnf, err = readConfFile("/etc/reniced.yaml")
+		if runtime.GOOS == "freebsd" {
+			cnf, err = readConfFile("/usr/local/etc/reniced.yaml")
+		} else {
+			cnf, err = readConfFile("/etc/reniced.yaml")
+		}
 	}
 
 	return cnf, err
