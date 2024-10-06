@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package main
+package lib
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ func GetIOPriority(which int, who int) (uint32, error) {
 	)
 
 	if e1 != 0 {
-		err = fmt.Errorf(fmt.Sprintf("Received error number %v", e1))
+		err = fmt.Errorf("received error number %w", e1)
 	}
 
 	return prio, err
@@ -34,18 +34,18 @@ func SetIOPriority(which int, who int, prio uint32) error {
 	)
 
 	if e1 != 0 {
-		err = fmt.Errorf(fmt.Sprintf("Received error number %v", e1))
+		err = fmt.Errorf("received error number %w", e1)
 	}
 
 	return err
 }
 
 // IORenice выставляет процессу приоритет для операций ввода-вывода.
-func IORenice(cnf Config, p *proc.Process, processName string) {
+func (cnf Config) IORenice(p *proc.Process, processName string) {
 	if currentIOPrioLevel, err := GetIOPriority(IOPRIO_WHO_PROCESS, int(p.Pid)); err == nil {
 		currentClass, currentClassdata := PrioToClassAndClassdata(currentIOPrioLevel)
-		class := ioreniceClass[processName]
-		classdata := ioreniceClassdata[processName]
+		class := cnf.IoreniceClass[processName]
+		classdata := cnf.IoreniceClassdata[processName]
 
 		if class == currentClass && classdata == currentClassdata {
 			if cnf.Debug && currentIOPrioLevel != 0 { // 0 - это дефолтный уровень io niceness.

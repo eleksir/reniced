@@ -1,4 +1,4 @@
-package main
+package lib
 
 func PrioToClass(prio uint32) uint32 {
 	return prio >> IOPRIO_CLASS_SHIFT

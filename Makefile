@@ -1,15 +1,14 @@
 #!/usr/bin/env gmake -f
 
-BUILDOPTS=-ldflags="-s -w" -a -gcflags=all=-l -trimpath
-
 BINARY=reniced
+BUILDOPTS=-ldflags="-s -w" -a -gcflags=all=-l -trimpath
 
 all: clean build
 
 build:
-	go build ${BUILDOPTS} -o ${BINARY}
+	go build ${BUILDOPTS} -o ${BINARY} ./cmd/${BINARY}
 clean:
-	go clean
+	$(RM) ${BINARY}
 
 upgrade:
 	$(RM) -r vendor

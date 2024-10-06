@@ -1,71 +1,18 @@
-package main
+package lib
 
 import (
 	"log"
 	"math"
-	"os"
-	"os/signal"
 	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/alitto/pond"
-	"github.com/sevlyar/go-daemon"
 	proc "github.com/shirou/gopsutil/v3/process"
 )
 
-// main основная функция программы.
-func main() {
-	// Самое время поставить траппер сигналов.
-	signal.Notify(sigChan,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
-	go sigHandler()
-
-	var (
-		cnf Config
-		err error
-	)
-
-	cnf, err = readConf()
-
-	if err != nil {
-		log.Fatalf("unable to parse config: %s", err)
-	}
-
-	if cnf.Daemon {
-		cntxt := &daemon.Context{
-			WorkDir: "/",
-			Args:    []string{"reniced"},
-		}
-
-		if cnf.Pidfile != "" {
-			cntxt.PidFileName = cnf.Pidfile
-		}
-
-		if d, err := cntxt.Reborn(); err != nil {
-			log.Fatal("Unable to run: ", err)
-
-			return
-		} else if d != nil {
-			return
-		}
-
-		defer cntxt.Release() //nolint: errcheck
-	}
-
-	// То, ради чего всё затевалось.
-	reniced(cnf)
-}
-
 // reniced основная логика.
-func reniced(cnf Config) {
-	// Создаём пул со статическим количеством воркеров и длиной очереди неблокируемых задач, равной NbCapacity.
-	pool = pond.New(cnf.MaxWorkers, cnf.NbCapacity, pond.Strategy(pond.Lazy()))
-
+func (cnf Config) Reniced() {
 	for {
 		processList, err := proc.Processes()
 
@@ -75,11 +22,11 @@ func reniced(cnf Config) {
 
 		// Не самый эффективный, зато работающий способ - простой перебор массивов.
 		for _, p := range processList {
-			ok := pool.TrySubmit(func() {
+			ok := cnf.Pool.TrySubmit(func() {
 				if processName, err := p.Name(); err == nil {
 					// Для каждого процесса извлекаем его текущий priority.
 					if currentPrioLevel, err := syscall.Getpriority(syscall.PRIO_PROCESS, int(p.Pid)); err == nil {
-						if niceLevel := renice[processName]; niceLevel != 0 {
+						if niceLevel := cnf.Renice[processName]; niceLevel != 0 {
 							prioLevel := niceLevel
 							currentNiceLevel := currentPrioLevel
 
@@ -121,10 +68,10 @@ func reniced(cnf Config) {
 						}
 					}
 
-					IORenice(cnf, p, processName)
+					cnf.IORenice(p, processName)
 
 					// Посылаем процессу сигналы, если таковые есть в конфиге.
-					if killSignal := kill[processName]; killSignal != 0 {
+					if killSignal := cnf.KillSignal[processName]; killSignal != 0 {
 						switch killSignal { //nolint:exhaustive
 						case syscall.SIGSTOP:
 							_ = p.SendSignal(killSignal)
@@ -155,7 +102,7 @@ func reniced(cnf Config) {
 			})
 
 			if !ok {
-				log.Printf("Unable to add task to pool")
+				log.Printf("Unable to add task to pool. Increase nb_capacity?")
 			}
 		}
 
@@ -165,29 +112,5 @@ func reniced(cnf Config) {
 	// Мы сюда никогда не попадём.
 	// pool.StopAndWait()
 } //nolint:wsl
-
-// sigHandler хэндлер сигналов. Работает на выходе приложения. Держит INT, TERM, QUIT.
-func sigHandler() {
-	for {
-		var s = <-sigChan
-		switch s {
-		case syscall.SIGINT:
-			log.Print("Got SIGINT, quitting")
-		case syscall.SIGTERM:
-			log.Print("Got SIGTERM, quitting")
-		case syscall.SIGQUIT:
-			log.Print("Got SIGQUIT, quitting")
-
-		// Заходим на новую итерацию, если у нас "неинтересный" сигнал
-		default:
-			continue
-		}
-
-		// Закрываем пул воркеров и освобождаем ресурсы.
-		pool.StopAndWait()
-
-		os.Exit(0)
-	}
-}
 
 /* vim: set ft=go noet ai ts=4 sw=4 sts=4: */

@@ -2,10 +2,7 @@ run:
   tests: false
   modules-download-mode: readonly
   allow-parallel-runners: true
-  go: '1.21'
-issues:
-  skip-dirs:
-    - vendor
+  go: '1.22'
 output:
   sort-results: true
 linters:
@@ -27,14 +24,13 @@ linters:
     - errchkjson
     - errorlint
     - exhaustive
-    - exportloopref
+    - copyloopvar
     - ginkgolinter
     - gci
     - gocheckcompilerdirectives
     - gocritic
     - godot
     - gofmt
-    - goimports
     - gosec
     - gosmopolitan
     - grouper
@@ -59,5 +55,11 @@ linters:
     - wastedassign
     - whitespace
     - wsl
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - nilness
+      - fieldalignment
 
 # vim: set ft=yaml noet ai ts=4 sw=4 sts=4:

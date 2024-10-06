@@ -1,6 +1,28 @@
-package main
+package lib
+
+import (
+	"os"
+	"syscall"
+
+	"github.com/alitto/pond"
+)
 
 type Config struct {
+	// Пул воркеров.
+	Pool *pond.WorkerPool
+
+	KillSignal        map[string]syscall.Signal
+	Renice            map[string]int
+	IoreniceClass     map[string]uint32
+	IoreniceClassdata map[string]uint32
+	ClassToString     map[uint32]string
+	StringToClass     map[string]uint32
+
+	// Канал, в который приходят уведомления для хэндлера сигналов от траппера сигналов.
+	SigChan chan os.Signal
+
+	NotImplementedError error
+
 	// Weather we fork to backgoround or stay as-is.
 	Daemon bool `yaml:"daemon,omitempty"`
 
