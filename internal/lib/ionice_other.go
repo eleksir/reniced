@@ -5,12 +5,12 @@ package lib
 
 import proc "github.com/shirou/gopsutil/v3/process"
 
-func GetIOPriority(which int, who int) (prio uint32, err error) {
-	return 0, NotImplementedError
+func (cnf Config) GetIOPriority(which int, who int) (prio uint32, err error) {
+	return 0, cnf.NotImplementedError
 }
 
-func SetIOPriority(which int, who int, prio uint32) (err error) {
-	return NotImplementedError
+func (cnf Config) SetIOPriority(which int, who int, prio uint32) (err error) {
+	return cnf.NotImplementedError
 }
 
-func IORenice(cnf Config, p *proc.Process, processName string) {}
+func (cnf Config) IORenice(cnf Config, p *proc.Process, processName string) {}
