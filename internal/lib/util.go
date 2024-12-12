@@ -80,7 +80,7 @@ func (cnf *Config) readConfFile(path string) error {
 	}
 
 	if cnf.MaxWorkers == 0 {
-		cnf.MaxWorkers = 5
+		cnf.MaxWorkers = runtime.NumCPU()
 		log.Printf("max_workers set to %d", cnf.MaxWorkers)
 	}
 
