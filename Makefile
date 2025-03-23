@@ -1,7 +1,7 @@
 #!/usr/bin/env gmake -f
 
 BINARY=reniced
-BUILDOPTS=-ldflags="-s -w" -a -gcflags=all=-l -trimpath
+BUILDOPTS=-ldflags="-s -w" -a -gcflags=all="-l -B" -trimpath -buildvcs=false
 
 all: clean build
 

@@ -77,9 +77,7 @@ func main() {
 		}
 
 		if d, err := cntxt.Reborn(); err != nil {
-			log.Fatal("Unable to run: ", err)
-
-			return
+			log.Fatalf("Unable to run: %s", err) //nolint: gocritic
 		} else if d != nil {
 			return
 		}

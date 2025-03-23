@@ -13,4 +13,4 @@ func (cnf Config) SetIOPriority(which int, who int, prio uint32) (err error) {
 	return cnf.NotImplementedError
 }
 
-func (cnf Config) IORenice(cnf Config, p *proc.Process, processName string) {}
+func (cnf Config) IORenice(p *proc.Process, processName string) {}

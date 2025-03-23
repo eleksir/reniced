@@ -70,9 +70,34 @@ func (cnf *Config) readConfFile(path string) error {
 		return err
 	}
 
-	if cnf.LoopDelay == 0 {
-		cnf.LoopDelay = 2000
-		log.Printf("loop_delay set to %d milliseconds", cnf.LoopDelay)
+	if cnf.ProcessListUpdatePeriod == 0 {
+		cnf.ProcessListUpdatePeriod = 5000
+		log.Printf("process_list_update_priod set to %d milliseconds", cnf.ProcessListUpdatePeriod)
+	}
+
+	if cnf.ProcessNicePeriod == 0 {
+		cnf.ProcessNicePeriod = 5000
+		log.Printf("process_nice_priod set to %d milliseconds", cnf.ProcessNicePeriod)
+	}
+
+	if cnf.ProcessIONicePeriod == 0 {
+		cnf.ProcessIONicePeriod = 5000
+		log.Printf("process_ionice_period set to %d milliseconds", cnf.ProcessIONicePeriod)
+	}
+
+	if cnf.ProcessKillPeriod == 0 {
+		cnf.ProcessKillPeriod = 5000
+		log.Printf("process_kill_period set to %d milliseconds", cnf.ProcessIONicePeriod)
+	}
+
+	if cnf.PeriodicProcessInvocationPeriod == 0 {
+		cnf.PeriodicProcessInvocationPeriod = 60000
+		log.Printf("periodic_process_invocation_period set to %d milliseconds", cnf.PeriodicProcessInvocationPeriod)
+	}
+
+	if cnf.PeriodicProcessInvocationDelay == 0 {
+		cnf.PeriodicProcessInvocationDelay = 500
+		log.Printf("periodic_process_invocation_delay set to %d milliseconds", cnf.PeriodicProcessInvocationDelay)
 	}
 
 	if cnf.Debug {

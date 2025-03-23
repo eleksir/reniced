@@ -29,8 +29,26 @@ type Config struct {
 	// Where to put pid-file.
 	Pidfile string `yaml:"pidfile,omitempty"`
 
-	// LoopDelay in milliseconds - whole set of action delay period.
-	LoopDelay int `yaml:"loop_delay,omitempty"`
+	// ProcessListUpdatePeriod - delay between process list update task consecutive runs.
+	ProcessListUpdatePeriod int `yaml:"process_list_update_period,omitempty"`
+
+	// ProcessKillPeriod in milliseconds - delay between kill consecutive tasks.
+	ProcessKillPeriod int `yaml:"process_kill_period,omitempty"`
+
+	// ProcessNicePeriod in milliseconds - delay between changing niceness consecutive tasks.
+	ProcessNicePeriod int `yaml:"process_nice_period,omitempty"`
+
+	// ProcessNicePeriod in milliseconds - delay between changing io niceness consecutive tasks (linux-only).
+	ProcessIONicePeriod int `yaml:"process_ionice_period,omitempty"`
+
+	// PeriodicProcessInvocationPeriod in milliseconds - delay between PeriodicProcesses invocations.
+	PeriodicProcessInvocationPeriod int `yaml:"periodic_process_invocation_period,omitempty"`
+
+	// PriodicProcessInvocationDelay in milliseconds - delay between each process calling in PeriodicProcesses list.
+	PeriodicProcessInvocationDelay int `yaml:"periodic_process_invocation_delay,omitempty"`
+
+	// PeriodicProcesses list of processes that should be executed priodically.
+	PeriodicProcesses []string `yaml:"periodic_process,omitempty"`
 
 	// Whether to print debug info on stdout.
 	Debug bool `yaml:"debug,omitempty"`
